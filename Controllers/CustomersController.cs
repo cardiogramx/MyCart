@@ -13,15 +13,17 @@ namespace MyCart.Controllers
     public class CustomersController : Controller
     {
         private readonly ICustomerService customerService;
+        private readonly ICartService cartService;
 
-        public CustomersController(ICustomerService customerService)
+        public CustomersController(ICustomerService customerService, ICartService cartService)
         {
             this.customerService = customerService;
+            this.cartService = cartService;
         }
 
 
         [HttpGet("Get")]
-        public async Task<IActionResult> Get(string customerId, CancellationToken cancellationToken)
+        public async Task<IActionResult> Get(int customerId, CancellationToken cancellationToken)
         {
             if (ModelState.IsValid)
             {
@@ -70,6 +72,22 @@ namespace MyCart.Controllers
             }
 
             return BadRequest();
+        }
+
+        [HttpPost("Login")]
+        public async Task<IActionResult> Login(Customer customer, CancellationToken cancellationToken)
+        {
+            if (ModelState.IsValid)
+            {
+                //assuming email and password matches the ones on the db
+                if (true)
+                {
+                    var abandonedCart = await cartService.GetAbandonedCartAsync(customer.Id, cancellationToken);
+                    return Ok(abandonedCart);
+                }
+            }
+
+            return BadRequest(customer);
         }
     }
 }

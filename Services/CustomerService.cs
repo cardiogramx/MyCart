@@ -15,7 +15,7 @@ namespace MyCart.Services
 
         Task<Customer> UpdateAsync(Customer customer, CancellationToken cancellationToken = default);
 
-        Task<Customer> GetAsync(string customerId, CancellationToken cancellationToken = default);
+        Task<Customer> GetAsync(int customerId, CancellationToken cancellationToken = default);
 
         Task<List<Customer>> ListAsync(CancellationToken cancellationToken = default);
 
@@ -34,7 +34,7 @@ namespace MyCart.Services
             this.ctx = dataContext;
         }
 
-        public async Task<Customer> GetAsync(string customerId, CancellationToken cancellationToken = default)
+        public async Task<Customer> GetAsync(int customerId, CancellationToken cancellationToken = default)
         {
             try
             {

@@ -18,7 +18,7 @@ namespace MyCart.Models
         public DateTime DateTimeAdded { get; set; }
 
         [Required]
-        public string CustomerId { get; set; }
+        public int CustomerId { get; set; }
         public Customer Customer { get; set; }
 
         [Required]

@@ -20,14 +20,36 @@ namespace MyCart.Controllers
             this.cartService = cartService;
         }
 
-        [HttpPost("Add")]
+
+        [HttpPost("Create")]
+        public async Task<IActionResult> Create(Cart cart, CancellationToken cancellationToken)
+        {
+            if (ModelState.IsValid && cart != null)
+            {
+                try
+                {
+                    await cartService.CreateAsync(cart, cancellationToken);
+
+                    return Ok();
+                }
+                catch (Exception ex)
+                {
+                    return new UnprocessableEntityObjectResult(ex);
+                }
+            }
+
+            return BadRequest(ModelState);
+        }
+
+
+        [HttpPost("AddProduct")]
         public async Task<IActionResult> Add(Product product, CancellationToken cancellationToken)
         {
             if (ModelState.IsValid && product != null)
             {
                 try
                 {
-                    await cartService.AddAsync(product, cancellationToken);
+                    await cartService.AddProductAsync(product, cancellationToken);
 
                     return Ok();
                 }
@@ -45,10 +67,7 @@ namespace MyCart.Controllers
         {
             try
             {
-                var cart = await cartService.GetAsync(cartId, cancellationToken);
-                cart.LastVist = DateTime.UtcNow;
-                await cartService.SaveChangesAsync(cancellationToken);
-                return Ok(cart);
+                return Ok(await cartService.GetAsync(cartId, cancellationToken));
             }
             catch (Exception ex)
             {
@@ -79,18 +98,30 @@ namespace MyCart.Controllers
         public async Task<IActionResult> Delete(int cartId, CancellationToken cancellationToken)
         {
             try
-            {
-                var cart = await cartService.GetAsync(cartId, cancellationToken);
-                cart.LastVist = DateTime.UtcNow;
-                cart.IsDeleted = true;
-                await cartService.SaveChangesAsync(cancellationToken);
-                return Ok(cart);
+            {               
+                await cartService.DeleteAsync(cartId, cancellationToken);
+                return Ok();
             }
             catch (Exception ex)
             {
                 return new UnprocessableEntityObjectResult(ex);
             }
         }
+
+
+        [HttpGet("List")]
+        public async Task<IActionResult> List(CancellationToken cancellationToken)
+        {
+            try
+            {
+                return Ok(await cartService.ListAsync(cancellationToken));
+            }
+            catch (Exception ex)
+            {
+                return new UnprocessableEntityObjectResult(ex);
+            }
+        }
+
 
         [HttpGet("Checkout")]
         public async Task<IActionResult> Checkout(int cartId, CancellationToken cancellationToken)

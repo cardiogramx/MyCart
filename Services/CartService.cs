@@ -12,7 +12,9 @@ namespace MyCart.Services
 {
     public interface ICartService
     {
-        Task AddAsync(Product product, CancellationToken cancellationToken = default);
+        Task CreateAsync(Cart cart, CancellationToken cancellationToken = default);
+
+        Task AddProductAsync(Product product, CancellationToken cancellationToken = default);
 
         Task CheckoutAsync(int cartId, CancellationToken cancellationToken = default);
 
@@ -24,11 +26,13 @@ namespace MyCart.Services
 
         Task SaveChangesAsync(CancellationToken cancellationToken = default);
 
-
+        Task<List<Cart>> ListAsync(CancellationToken cancellationToken = default);
 
         Task<List<Cart>> AbandonedCartsBeforeCheckout(CancellationToken cancellationToken = default);
 
         Task<List<Cart>> AbandonedCartsDuringCheckout(CancellationToken cancellationToken = default);
+
+        Task<Cart> GetAbandonedCartAsync(int customerId, CancellationToken cancellationToken = default);
 
     }
 
@@ -74,29 +78,60 @@ namespace MyCart.Services
         }
 
 
-        public async Task AddAsync(Product product, CancellationToken cancellationToken = default)
+        public async Task CreateAsync(Cart cart, CancellationToken cancellationToken = default)
         {
-            var loggedInCustomer = "cardiogramx"; //get this from session, claims etc.
+            var loggedInCustomerId = 1; //get this from session, claims etc.
+
+            //get the cart for the logged in customer
+            var data = await ctx.Carts
+                    .SingleOrDefaultAsync(c => c.CustomerId == loggedInCustomerId
+                    && !c.IsDeleted && !c.IsCheckedOut, cancellationToken);
+
+            if (data != null)
+            {
+                return;
+            }
+
+            cart.CustomerId = loggedInCustomerId;
+            cart.IsAbandoned = true;
+            cart.DateTimeAbandoned = null;
+
+            cart.IsCheckedOut = false;
+            cart.DateTimeCheckedOut = null;
+
+            cart.IsDeleted = false;
+            cart.DateTimeDeleted = null;
+
+            cart.IsReminded = false;
+            cart.DateTimeReminded = null;
+
+            await ctx.Carts.AddAsync(cart, cancellationToken);
+            await ctx.SaveChangesAsync(cancellationToken);
+        }
+
+        public async Task AddProductAsync(Product product, CancellationToken cancellationToken = default)
+        {
+            var loggedInCustomerId = 1; //get this from session, claims etc.
 
             //get the cart for the logged in customer
             var cart = await ctx.Carts.Include(c => c.Products)
-                    .SingleOrDefaultAsync(c => c.CustomerId == loggedInCustomer
-                    && c.IsAbandoned, cancellationToken);
+                    .SingleOrDefaultAsync(c => c.CustomerId == loggedInCustomerId
+                    && !c.IsDeleted && !c.IsCheckedOut, cancellationToken);
 
             //if cart has items
             if (cart.Products.Any())
             {
-                //if item already in cart, increment the quantity
-                if (cart.Products.Contains(product))
-                {
-                    cart.Products.SingleOrDefault(c => c.Id == product.Id).Quantity += 1;
-                }
+                ////if item already in cart, increment the quantity
+                //if (cart.Products.Select(c => c.Id ).Contains(product.Id))
+                //{
+                //    cart.Products.SingleOrDefault(c => c.Id == product.Id).Quantity += 1;
+                //}
             }
-            else
-            {
-                //if cart is empty, add this product
-                cart.Products.Add(product);
-            }
+
+            cart.Products.Add(product);
+
+            cart.IsAbandoned = true;
+            cart.DateTimeAbandoned = DateTime.UtcNow;
 
             //save the changes to db
             ctx.Entry(cart).State = EntityState.Modified;
@@ -111,7 +146,7 @@ namespace MyCart.Services
         {
             //in production, get cart using the loggedin customerId instead of cartId for security reasons
             var cart = await ctx.Carts.Include(c => c.Products)
-                   .SingleOrDefaultAsync(c => c.Id == cartId && c.IsAbandoned && !c.IsDeleted, cancellationToken);
+                   .SingleOrDefaultAsync(c => c.Id == cartId && !c.IsDeleted, cancellationToken);
 
             //if no abandoned cart, abort checkout process
             if (cart == null)
@@ -136,8 +171,18 @@ namespace MyCart.Services
 
         public async Task<Cart> GetAsync(int cartId, CancellationToken cancellationToken = default)
         {
-            //return cart that matches supplied cartId
-            return await ctx.Carts.SingleOrDefaultAsync(c => c.Id == cartId && c.IsDeleted == false, cancellationToken);
+            var cart = await ctx.Carts.SingleOrDefaultAsync(c => c.Id == cartId && !c.IsDeleted, cancellationToken);
+
+            cart.LastVist = DateTime.UtcNow;
+            cart.IsAbandoned = true;
+            cart.DateTimeAbandoned = cart.LastVist;
+
+            //save update to db
+            ctx.Entry(cart).State = EntityState.Modified;
+            await ctx.SaveChangesAsync(cancellationToken);
+
+            //return cart
+            return cart;
         }
 
 
@@ -145,8 +190,7 @@ namespace MyCart.Services
         {
             //in production, get cart using the loggedin customerId instead of cartId for security reasons
             var cart = await ctx.Carts.Include(c => c.Products)
-                   .SingleOrDefaultAsync(c => c.Id == cartId
-                   && c.IsAbandoned, cancellationToken);
+                   .SingleOrDefaultAsync(c => c.Id == cartId, cancellationToken);
 
             cart.IsDeleted = true;
             cart.DateTimeDeleted = DateTime.UtcNow;
@@ -211,7 +255,7 @@ namespace MyCart.Services
         public async Task<List<Cart>> AbandonedCartsBeforeCheckout(CancellationToken cancellationToken = default)
         {
             var data = await ctx.Carts
-                .Where(c => c.IsAbandoned == true && c.IsCheckedOut == false)
+                .Where(c => c.IsAbandoned == true && c.DateTimeAbandoned.HasValue && c.IsCheckedOut == false)
                 .Include(c => c.Customer)
                 .ToListAsync(cancellationToken);
 
@@ -221,11 +265,33 @@ namespace MyCart.Services
         public async Task<List<Cart>> AbandonedCartsDuringCheckout(CancellationToken cancellationToken = default)
         {
             var data = await ctx.Carts
-                .Where(c => c.IsAbandoned == true && c.IsCheckedOut == true)
+                .Where(c => c.IsAbandoned == true && c.DateTimeAbandoned.HasValue && c.IsCheckedOut == true)
                 .Include(c => c.Customer)
                 .ToListAsync(cancellationToken);
 
             return data;
+        }
+
+        public async Task<List<Cart>> ListAsync(CancellationToken cancellationToken = default)
+        {
+            return await ctx.Carts
+                .Include(c => c.Customer)
+                .Include(c => c.Products)
+                .ToListAsync(cancellationToken);
+        }
+
+        public async Task<Cart> GetAbandonedCartAsync(int customerId, CancellationToken cancellationToken = default)
+        {
+            var cart = await ctx.Carts.SingleOrDefaultAsync(c => c.CustomerId == customerId && !c.IsDeleted && c.IsAbandoned, cancellationToken);
+
+            cart.LastVist = DateTime.UtcNow;
+
+            //save update to db
+            ctx.Entry(cart).State = EntityState.Modified;
+            await ctx.SaveChangesAsync(cancellationToken);
+
+            //return cart
+            return cart;
         }
     }
 }
