@@ -1,5 +1,6 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using SendGrid;
 using SendGrid.Helpers.Mail;
 
@@ -13,12 +14,16 @@ namespace MyCart.Services
 
     public class EmailService : IEmailService
     {
+        private readonly string sendGridApiKey;
+
+        public EmailService(IConfiguration configuration)
+        {
+            this.sendGridApiKey = configuration.GetSection("SendGrid:ApiKey").Get<string>();
+        }
+
         public async Task<bool> SendAsync(SendGridEmailMessage message, CancellationToken cancellationToken = default)
         {
-
-            var apiKey = "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";
-
-            var client = new SendGridClient(apiKey);
+            var client = new SendGridClient(sendGridApiKey);
 
             var from = new EmailAddress("cardiogramx@gmail.com", "Cardiogramx from MyCart");
             var to = new EmailAddress(message.Address);
