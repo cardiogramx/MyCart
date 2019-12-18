@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 using MyCart.Models;
@@ -26,6 +28,7 @@ namespace MyCart.Controllers
 
 
         [HttpGet("Get")]
+        [ProducesResponseType(typeof(Customer), StatusCodes.Status200OK)]
         public async Task<IActionResult> Get(int customerId, CancellationToken cancellationToken)
         {
             if (ModelState.IsValid)
@@ -39,6 +42,7 @@ namespace MyCart.Controllers
         }
 
         [HttpPost("Add")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> Add(Customer customer, CancellationToken cancellationToken)
         {
             if (ModelState.IsValid)
@@ -52,6 +56,7 @@ namespace MyCart.Controllers
         }
 
         [HttpPost("Update")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> Update(Customer customer, CancellationToken cancellationToken)
         {
             if (ModelState.IsValid)
@@ -65,6 +70,7 @@ namespace MyCart.Controllers
         }
 
         [HttpGet("List")]
+        [ProducesResponseType(typeof(List<Customer>), StatusCodes.Status200OK)]
         public async Task<IActionResult> List(CancellationToken cancellationToken)
         {
             if (ModelState.IsValid)
@@ -78,6 +84,7 @@ namespace MyCart.Controllers
         }
 
         [HttpPost("Login")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> Login(Customer customer, CancellationToken cancellationToken)
         {
             if (ModelState.IsValid)

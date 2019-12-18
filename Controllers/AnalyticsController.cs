@@ -1,7 +1,9 @@
-﻿using System.Threading;
+﻿using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-
+using MyCart.Models;
 using MyCart.Services;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -21,6 +23,7 @@ namespace MyCart.Controllers
         }
 
         [HttpGet("DeletedCartAfterReminder")]
+        [ProducesResponseType(typeof(List<Customer>), StatusCodes.Status200OK)]
         public async Task<IActionResult> DeletedCartAfterReminder(CancellationToken cancellationToken)
         {
             if (ModelState.IsValid)
@@ -33,7 +36,9 @@ namespace MyCart.Controllers
             return BadRequest();
         }
 
+
         [HttpGet("VisitedCartAfterReminder")]
+        [ProducesResponseType(typeof(List<Customer>), StatusCodes.Status200OK)]
         public async Task<IActionResult> VisitedCartAfterReminder(CancellationToken cancellationToken)
         {
             if (ModelState.IsValid)
@@ -46,27 +51,31 @@ namespace MyCart.Controllers
             return BadRequest();
         }
 
+
         [HttpGet("AbandonedCartsBeforeCheckout")]
+        [ProducesResponseType(typeof(List<Cart>), StatusCodes.Status200OK)]
         public async Task<IActionResult> AbandonedCartsBeforeCheckout(CancellationToken cancellationToken)
         {
             if (ModelState.IsValid)
             {
-                var customers = await cartService.AbandonedCartsBeforeCheckout(cancellationToken);
+                var carts = await cartService.AbandonedCartsBeforeCheckout(cancellationToken);
 
-                return Ok(customers);
+                return Ok(carts);
             }
 
             return BadRequest();
         }
 
+
         [HttpGet("AbandonedCartsDuringCheckout")]
+        [ProducesResponseType(typeof(List<Cart>), StatusCodes.Status200OK)]
         public async Task<IActionResult> AbandonedCartsDuringCheckout(CancellationToken cancellationToken)
         {
             if (ModelState.IsValid)
             {
-                var customers = await cartService.AbandonedCartsDuringCheckout(cancellationToken);
+                var carts = await cartService.AbandonedCartsDuringCheckout(cancellationToken);
 
-                return Ok(customers);
+                return Ok(carts);
             }
 
             return BadRequest();
