@@ -111,7 +111,7 @@ namespace MyCart.Services
         {
             //in production, get cart using the loggedin customerId instead of cartId for security reasons
             var cart = await ctx.Carts.Include(c => c.Products)
-                   .SingleOrDefaultAsync(c => c.Id == cartId && c.IsAbandoned, cancellationToken);
+                   .SingleOrDefaultAsync(c => c.Id == cartId && c.IsAbandoned && !c.IsDeleted, cancellationToken);
 
             //if no abandoned cart, abort checkout process
             if (cart == null)

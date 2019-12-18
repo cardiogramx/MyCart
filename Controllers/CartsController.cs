@@ -91,5 +91,19 @@ namespace MyCart.Controllers
                 return new UnprocessableEntityObjectResult(ex);
             }
         }
+
+        [HttpGet("Checkout")]
+        public async Task<IActionResult> Checkout(int cartId, CancellationToken cancellationToken)
+        {
+            try
+            {
+                await cartService.CheckoutAsync(cartId, cancellationToken);
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return new UnprocessableEntityObjectResult(ex);
+            }
+        }
     }
 }
