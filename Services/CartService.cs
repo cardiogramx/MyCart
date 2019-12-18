@@ -59,22 +59,24 @@ namespace MyCart.Services
             //get cart detail from db including customer data
             var cart = ctx.Carts.Include(c => c.Customer)
               .SingleOrDefault(c => c.Id == (int)sender && c.IsAbandoned);
-            
-            //send notification email to customer
-            var isEmailSent = emailService.SendAsync(new SendGridEmailMessage
-            {
-                Address = cart.Customer.Email,
-                Subject = "Don't Break My Cart",
-                PlainTextContent = $"You have uncompleted orders"
-            }).Result;
 
-            if (isEmailSent)
+            if ((DateTime.UtcNow - cart.LastVist).Value.Days <= 21)
             {
-                cart.IsReminded = true;
-                cart.DateTimeReminded = DateTime.UtcNow;
-                ctx.SaveChanges();
+                //send notification email to customer
+                var isEmailSent = emailService.SendAsync(new SendGridEmailMessage
+                {
+                    Address = cart.Customer.Email,
+                    Subject = "Don't Break My Cart",
+                    PlainTextContent = $"You have uncompleted orders"
+                }).Result;
+
+                if (isEmailSent)
+                {
+                    cart.IsReminded = true;
+                    cart.DateTimeReminded = DateTime.UtcNow;
+                    ctx.SaveChanges();
+                }
             }
-          
         }
 
 
