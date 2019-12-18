@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,11 +15,13 @@ namespace MyCart.Controllers
     {
         private readonly ICustomerService customerService;
         private readonly ICartService cartService;
+        private readonly IEmailService emailService;
 
-        public CustomersController(ICustomerService customerService, ICartService cartService)
+        public CustomersController(ICustomerService customerService, ICartService cartService, IEmailService emailService)
         {
             this.customerService = customerService;
             this.cartService = cartService;
+            this.emailService = emailService;
         }
 
 
@@ -83,7 +86,19 @@ namespace MyCart.Controllers
                 if (true)
                 {
                     var abandonedCart = await cartService.GetAbandonedCartAsync(customer.Id, cancellationToken);
-                    return Ok(abandonedCart);
+
+                    //if user visit is less than 21 days
+                    if (abandonedCart != null && (DateTime.UtcNow - abandonedCart.LastVist).Value.Days < 21)
+                    {
+                        await emailService.SendAsync(new SendGridEmailMessage
+                        {
+                            Address = abandonedCart.Customer.Email,
+                            Subject = "Don't Break My Cart",
+                            PlainTextContent = $"You have uncompleted orders"
+                        });
+                    }
+
+                    return Ok();
                 }
             }
 

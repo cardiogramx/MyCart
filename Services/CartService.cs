@@ -282,7 +282,9 @@ namespace MyCart.Services
 
         public async Task<Cart> GetAbandonedCartAsync(int customerId, CancellationToken cancellationToken = default)
         {
-            var cart = await ctx.Carts.SingleOrDefaultAsync(c => c.CustomerId == customerId && !c.IsDeleted && c.IsAbandoned, cancellationToken);
+            var cart = await ctx.Carts
+                .Include(c => c.Customer)
+                .SingleOrDefaultAsync(c => c.CustomerId == customerId && !c.IsDeleted && c.IsAbandoned && !c.IsCheckedOut, cancellationToken);
 
             cart.LastVist = DateTime.UtcNow;
 
