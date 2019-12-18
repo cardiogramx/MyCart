@@ -34,7 +34,7 @@ namespace MyCart
                 options.UseInMemoryDatabase(databaseName: "localdb");
             });
 
-            var redis = "mycart.redis.cache.windows.net:6380,password=iAVAcc4ImUPbL1idGurl473dw10Hq8pI3PRRiCLeBmQ=,ssl=True,abortConnect=False";
+            var redis = Configuration.GetSection("Redis:Config").Get<string>();
             services.AddStackExchangeRedisCache(options =>
             {
                 options.Configuration = redis;
